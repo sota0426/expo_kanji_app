@@ -9,19 +9,19 @@ import {
 } from "react-native";
 
 // Propsの型定義に `onChange` を追加
-interface KanjiInputProps {
+interface KanjiInputAndCheckProps {
   value: string;
   onChange: (text: string) => void; // 親から受け取るonChange関数
   onSubmit: () => void;
   hintList: string[];
 }
 
-export default function KanjiInput({
+export default function KanjiInputAndCheck({
   value,
   onChange, // propsからonChangeを受け取る
   onSubmit,
   hintList,
-}: KanjiInputProps) {
+}: KanjiInputAndCheckProps) {
   const [isHintVisible, setIsHintVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
 

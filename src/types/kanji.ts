@@ -1,3 +1,9 @@
+export interface Kanji {
+  char: string;
+  readings: string[];
+  meaning: string;
+  kanken:number;
+}
 
 export interface HistoryItem {
   kanji: string;

@@ -1,23 +1,26 @@
 // busyuData.ts
 
-export interface KanjiEntry {
-  char: string;
-  url: string;
-  onyomi: string[];
-  kunyomi: string[];
-  meaning: string[];
-  kakusuu: number;
-  busyu: string;
-  grade:string | null;
-  kanken: number;
+//漢字
+export interface Kanji {
+  char: string; //漢字  
+  meaning: string[]; 
+  kakusuu:number;
+  busyu:string;
+
+  url?:string;
+  readings?:string[];
+  onyomi?:string[];
+  kunyomi?:string[];
+  grade?:string| null; 
+  kanken?:number; //漢検
 }
 
 
 export interface RadicalEntry {
-  url: string;
+  url?: string;
   radical: string;
   reading: string;
-  kanji: KanjiEntry[];
+  kanji:Kanji[];
 }
 
 

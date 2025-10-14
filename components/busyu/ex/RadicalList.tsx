@@ -1,10 +1,10 @@
 // -----------------------
-// src/components/RadicalSelector.tsx
+// components\busyu\RadicalList.tsx
 // -----------------------
 import React, { useEffect } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
 
-interface RadicalSelectorProps {
+interface RadicalListProps {
   radicals: {
     radical: string;
     count: number;
@@ -13,10 +13,10 @@ interface RadicalSelectorProps {
   onSelect: (radical: string) => void;
 }
 
-export default function RadicalSelector({
+export default function RadicalList({
   radicals,
   onSelect    
-}: RadicalSelectorProps) {
+}: RadicalListProps) {
 
     useEffect(() => {
         // デバッグ用のログはそのまま使用できます
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16, // カード間の垂直方向の余白
     // 2カラムにするための幅設定 (余白を考慮)
-    width: "48%",
+    width: "30%",
 
     // iOS用の影
     shadowColor: "#000",
