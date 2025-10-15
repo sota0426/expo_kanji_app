@@ -1,4 +1,4 @@
-import { processedDataProps } from "@/app/busyu";
+import { ProcessedDataProps } from "@/app/busyu";
 import { kankenToGakusei } from "@/assets/kankenToGrade";
 import { RefreshCw, Trophy } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -31,7 +31,7 @@ interface  prpcessedKanji {
   
 
 interface QuizScreenProps{
-  currentRadicalKanji:processedDataProps
+  currentRadicalKanji:ProcessedDataProps
 }
 
 export default function QuizScreen({
@@ -94,6 +94,8 @@ export default function QuizScreen({
             <Trophy color="#eab308" size={24} />
             <Text style={bar_styles.scoreText}>{score}点</Text>
           </View>
+
+          
           {/* 右側：リセットボタン */}
           <TouchableOpacity onPress={onEnd} style={bar_styles.resetButton}>
             <RefreshCw color="white" size={16} />

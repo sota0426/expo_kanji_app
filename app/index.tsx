@@ -19,7 +19,7 @@ export default function Home() {
       title: "部首当てクイズ",
       description: "漢字の部首を答える４択クイズ",
       path: "/busyuate", 
-      disabled: false,
+      disabled: true,
       genre: "漢字",
       difficulty: "中級",
       icon: "🔍"
@@ -28,7 +28,7 @@ export default function Home() {
       title: "四字熟語当てクイズ",
       description: "意味から四字熟語を答える４択クイズ",
       path: "/yojiimi", 
-      disabled: false,
+      disabled: true,
       genre: "漢字",
       difficulty: "上級",
       icon: "📚"
@@ -137,7 +137,7 @@ export default function Home() {
 // Calculate item width for a 2-column grid with spacing
 const { width } = Dimensions.get('window');
 const cardMargin = 5;
-const cardWidth = (width /2) - (cardMargin * 2);
+const cardWidth = (width /3) - (cardMargin * 2);
 
 const styles = StyleSheet.create({
   flexContainer: {

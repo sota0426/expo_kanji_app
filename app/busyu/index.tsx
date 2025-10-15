@@ -1,108 +1,118 @@
 import { busyuData } from "@/assets/busyuData";
 import QuizScreen from "@/components/busyu/QuizScreen";
-import RadicalList from "@/components/busyu/ex/RadicalList";
+import RadicalList from "@/components/busyu/RadicalList";
+import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Button, SafeAreaView, StyleSheet } from "react-native";
 
-
-
-// --- ヘルパー関数 (コンポーネント外に配置) ---
-
-// カタカナをひらがなに変換
+// --- ヘルパー関数 (変更なし) ---
 const kanaToHiragana = (str: string) =>
   str.replace(/[ァ-ヶ]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0x60));
-
-// 全角数字を半角に変換
 const toHalfWidth = (str: string) =>
-  str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-
-// 学年文字列から数値を取得 (例:「小学３年生」-> 3)
+  str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
 const parseGrade = (gradeStr: string): number => {
   const raw = toHalfWidth(gradeStr || "");
   const match = raw.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 7; // 見つからない場合は7（中学生以上）
+  return match ? parseInt(match[0], 10) : 7;
 };
 
- export  interface processedDataProps{
-    radical:string;
-    reading:string;
-    kanji:{
-      char:string,
-      readings:string[],
-      meaning:string[],
-      grade: number,
-      kanken:number,
-      kakusuu:number,
-      busyu:string,
-    }[];
-  }
+// --- 型定義 (変更なし) ---
+export interface ProcessedDataProps {
+  radical: string;
+  reading: string;
+  kanji: {
+    char: string;
+    readings: string[];
+    meaning: string[];
+    grade: number;
+    kanken: number;
+    kakusuu: number;
+    busyu: string;
+  }[];
+}
 
-export default function QuizStarter(){
-  const [processedData , setProcessedData] = useState<processedDataProps[]>([]);
-  const [currentRadical , setCurrentRadical] = useState<string | null>(null);
+export default function QuizStarter() {
+  const [processedData, setProcessedData] = useState<ProcessedDataProps[]>([]);
+  const [currentRadical, setCurrentRadical] = useState<string | null>(null);
 
-  /**
-   * 初期化処理:
-   * busyuDataを一度だけ処理し、使いやすい形式に変換してstateに保存する
-   */
+  // 初期化処理 (変更なし)
   useEffect(() => {
     const data = busyuData.map(({ radical, reading, kanji }) => ({
       radical,
       reading,
       kanji: kanji.map((k) => ({
         char: k.char,
-      readings: [...(k.onyomi || []), ...(k.kunyomi || [])]
-          .map((r) => kanaToHiragana(r.replace(/（.*?）/g, ""))),
-        meaning: [(k.meaning?.[0] || "").replace(/。$/, "")],        // 意味を最初の文だけに整形
-        grade: parseGrade(k.grade || ""),        // 学年を数値に変換
-        kanken: k.kanken || 99,        // 漢検級。未定義の場合は大きな値(99)を設定してソートで不利にする
-        kakusuu:k.kakusuu,
-        busyu:k.busyu,
+        readings: [...(k.onyomi || []), ...(k.kunyomi || [])].map((r) =>
+          kanaToHiragana(r.replace(/（.*?）/g, ""))
+        ),
+        meaning: [(k.meaning?.[0] || "").replace(/。$/, "")],
+        grade: parseGrade(k.grade || ""),
+        kanken: k.kanken || 99,
+        kakusuu: k.kakusuu,
+        busyu: k.busyu,
       })),
     }));
     setProcessedData(data);
   }, []);
 
-  // 同じ部首の漢字数ソート
-  const radicalWithCount = useMemo(() =>
-    processedData
-      .map(({ radical, reading, kanji }) => ({
-        radical,
-        reading,
-        count: kanji.length,
-      }))
-      .sort((a, b) => b.count - a.count),
-    [processedData] // processedDataが変更された時だけ再計算
+  // 部首リストを漢字数でソート (変更なし)
+  const radicalWithCount = useMemo(
+    () =>
+      processedData
+        .map(({ radical, reading, kanji }) => ({
+          radical,
+          reading,
+          count: kanji.length,
+        }))
+        .sort((a, b) => b.count - a.count),
+    [processedData]
   );
 
+  // 選択された部首の全データを取得 (変更なし)
+  const currentRadicalData = useMemo(
+    () => processedData.find((entry) => entry.radical === currentRadical),
+    [processedData, currentRadical]
+  );
 
-  const currentRadicalData = useMemo(()=>
-    processedData.find((entry)=> entry.radical === currentRadical),
-  [processedData,currentRadical])
-
-  
-  const onSelect=(radical:string)=>{
+  // 部首が選択されたときの処理
+  const onSelect = (radical: string) => {
     setCurrentRadical(radical);
-  }
+  };
 
+  // ★★ 追加: クイズ画面からリストに戻る処理 ★★1
+  const handleBack = () => {
+    router.push("/")
+  };
 
-  return(
-    <SafeAreaView style={{flex:1}}>
-      {!currentRadicalData  ? (
-        <RadicalList
-          radicals={radicalWithCount}
-          onSelect={onSelect}
+  return (
+    <SafeAreaView style={styles.container}>
+      
+      <Button
+        color="gray"
+        title="home"
+        onPress={handleBack}
+       />
+       
+      {!currentRadicalData ? (
+        <RadicalList 
+          radicals={radicalWithCount} 
+          onSelect={onSelect} 
         />
-      ):(
+      ) : (
         <QuizScreen
-            currentRadicalKanji={currentRadicalData}
+          currentRadicalKanji={currentRadicalData}
         />
       )}
     </SafeAreaView>
-  )
-
-
-
-
-
+  );
 }
+
+const styles = StyleSheet.create({
+  goHome:{
+
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F7', // 全体の背景色を少しグレーに
+  },
+});
