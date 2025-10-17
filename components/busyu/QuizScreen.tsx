@@ -1,10 +1,11 @@
 import { ProcessedDataProps } from "@/app/busyu";
 import { kankenToGakusei } from "@/assets/kankenToGrade";
 import { RefreshCw, Trophy } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import ResultFlash from "./ResultFlash";
 
 // interface processedDataProps {
 //     radical: string;
@@ -19,7 +20,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 //         busyu: string;
 //     }[];
 // }
-interface  prpcessedKanji {
+
+export interface  prpcessedKanji {
         char: string;
         readings: string[];
         meaning: string[];
@@ -39,13 +41,51 @@ export default function QuizScreen({
 }:QuizScreenProps){
   const [score , setScore] = useState<number>(0)
   const [isHintVisible,setIsHintVisible] = useState<boolean>(false);
+
+  //textinput 
   const [inputText , setInputText] = useState<string>("");
   const [foundKanji , setFoundKanji] = useState<prpcessedKanji[]>([]);
+  const inputRef = useRef<TextInput>(null);
 
+  //resultFlash
+  const [collectedKanji , setCollectedKanji] = useState<prpcessedKanji | null>();
+  const [showResultFlash,setShowResultFlash] = useState<boolean>(false);
 
+  // 結果表示の管理
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (collectedKanji) {
+      setShowResultFlash(true);
+      timer = setTimeout(() => {
+        setShowResultFlash(false);
+        setCollectedKanji(null);
+      }, 1500);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [collectedKanji]);
+
+  // 結果フラッシュが閉じたタイミングでフォーカス
+  useEffect(() => {
+    if (!showResultFlash) {
+      requestAnimationFrame(()=>{
+        inputRef.current?.focus();
+      })
+    }
+  }, [showResultFlash]);
+
+   
   const unfoundKanji = useMemo(()=>
-      currentRadicalKanji.kanji.filter(k => !foundKanji.some(f => f.char === k.char))
-    ,[currentRadicalKanji.kanji,foundKanji])
+      currentRadicalKanji.kanji.filter(
+        k => !foundKanji.some(f => f.char === k.char)
+      ),[currentRadicalKanji.kanji,foundKanji]
+    )
+
+  const findMatchedKAnji = useCallback(
+    (reading:string) => unfoundKanji.find( k => k.readings.includes(reading)),
+    [unfoundKanji]
+  )
   
     // ヒントリストの生成
   const hintList = useMemo(()=>
@@ -61,18 +101,13 @@ export default function QuizScreen({
     if(!inputText.trim()) return;
     
     const answer = inputText.trim().toLocaleLowerCase();
+    const matchedKanji = findMatchedKAnji(answer);
     
-    // まだ見つけていない漢字の中から、読みが一致するものを探す
-    const matchedKanji = currentRadicalKanji.kanji.find(k => 
-      !foundKanji.some(found => found.char === k.char) && // まだ見つかっていない
-      k.readings.includes(answer) // 読みが一致する
-    );
-
     if(matchedKanji){
       setScore(current => current + 10);
       setFoundKanji(prev => [...prev , matchedKanji]);
+      setCollectedKanji(matchedKanji);
     }
-
     setInputText("")
   }
 
@@ -123,7 +158,8 @@ export default function QuizScreen({
             placeholder="読み方をひらがなで入力"
             placeholderTextColor="#9ca3af" // gray-400
             autoCapitalize="none"
-            autoCorrect={false}
+            autoFocus={true}
+            submitBehavior="blurAndSubmit"
           />
           <View style={kanjiInput_styles.buttonContainer}>
             <TouchableOpacity
@@ -161,6 +197,12 @@ export default function QuizScreen({
             </View>
           )}
         </View>
+
+        { showResultFlash && collectedKanji && (
+          <ResultFlash 
+            kanji={collectedKanji}
+          />
+        )}
 
 
 {/* テスト*/}
