@@ -137,7 +137,7 @@ export default function Home() {
 // Calculate item width for a 2-column grid with spacing
 const { width } = Dimensions.get('window');
 const cardMargin = 5;
-const cardWidth = (width /3) - (cardMargin * 2);
+const cardWidth = (width*0.9) - (cardMargin * 2);
 
 const styles = StyleSheet.create({
   flexContainer: {

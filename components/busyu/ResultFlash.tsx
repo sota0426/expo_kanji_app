@@ -1,42 +1,77 @@
-import { kankenToGrade } from "@/assets/kankenToGrade"; // このパスはご自身のプロジェクトに合わせてください
-import { Star } from "lucide-react-native";
+import { kankenToGakusei } from "@/assets/kankenToGrade";
 import { Animated, StyleSheet, Text, View } from "react-native";
-import { prpcessedKanji } from "./QuizScreen";
+import { KanjiData } from "./QuizScreen";
 
+// 
+// --- readingKanji 関数 (変更なし) ---
+// 
+export const readingKanji = (kanji: KanjiData) => {
+  const kunyomiStr = (kanji.kunyomi && kanji.kunyomi.length > 0)
+    ? kanji.kunyomi.join("、") // 区切り文字を "、" に変更
+    : ""; 
+
+  const onyomiStr = (kanji.onyomi && kanji.onyomi.length > 0)
+    ? kanji.onyomi.join("、") // 区切り文字を "、" に変更
+    : ""; 
+
+  return {
+    kunyomiStr,
+    onyomiStr,
+  };
+}
 
 interface ResultFlashProps {
-  kanji: prpcessedKanji;
+  collectKanji:KanjiData;
 }
 
 export default function ResultFlash({
-  kanji,
+  collectKanji
 }: ResultFlashProps) {
- 
+  const { kunyomiStr, onyomiStr } = readingKanji(collectKanji);
+
   return (
     <View style={styles.overlay}>
       <Animated.View
         style={[
           styles.container,
+          styles.correctContainer,
         ]}
         role="alert"
         aria-live="assertive"
       >
           <>
-            <View style={styles.header}>
-              <Star color="#F59E0B" fill="#F59E0B" size={24} style={styles.starIcon} />
-              <Text style={[styles.baseText, styles.correctHeaderText]}>
-                正解！ +10秒
-              </Text>
-              <Star color="#F59E0B" fill="#F59E0B" size={24} style={styles.starIcon} />
-            </View>
-            <Text style={[styles.baseText, styles.kanjiChar, styles.correctText]}>
-              {kanji.char}
+            <Text style={[ styles.kanjiChar, styles.correctText]}>
+              {collectKanji.char}
             </Text>
-            <Text style={[styles.baseText, styles.kanjiReading, styles.correctSubText]}>
-              読み: {kanji.readings.join("、")}
-            </Text>
-            <Text style={[styles.baseText, styles.kanjiGrade, styles.correctSubText]}>
-              {kankenToGrade(kanji.kanken)}
+
+            {/* ▼▼▼ 修正箇所 ▼▼▼ */}
+            
+            {/* 訓読みが存在する場合のみ、専用の行で表示 */}
+            {kunyomiStr && (
+              // 1. ラッパーViewを追加
+              <View style={styles.readingWrapper}> 
+                {/* 2. ラベルを分離 */}
+                <Text style={[styles.readingLabel, styles.correctSubText]}>訓:</Text> 
+                {/* 3. 読みテキストに flex: 1 を適用 */}
+                <Text style={[ styles.kanjiReading, styles.correctSubText]}>
+                  {kunyomiStr}
+                </Text>
+              </View>
+            )}
+            
+            {/* 音読みが存在する場合のみ、専用の行で表示 */}
+            {onyomiStr && (
+              <View style={styles.readingWrapper}>
+                <Text style={[styles.readingLabel, styles.correctSubText]}>音:</Text>
+                <Text style={[ styles.kanjiReading, styles.correctSubText]}>
+                  {onyomiStr}
+                </Text>
+              </View>
+            )}
+            {/* ▲▲▲ 修正完了 ▲▲▲ */}
+
+            <Text style={[ styles.kanjiGrade, styles.correctSubText]}>
+              {kankenToGakusei(collectKanji.kanken)}
             </Text>
           </>
       </Animated.View>
@@ -53,16 +88,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: "center",
+    justifyContent: "flex-start", 
     alignItems: "center",
+    paddingTop: "25%", 
     zIndex: 50,
   },
   container: {
-    borderRadius: 12, // 角を少し丸く
+    borderRadius: 12, 
     padding: 24,
     maxWidth: 320,
     width: "90%",
-    alignItems: "center",
+    alignItems: "center", // kanjiChar と kanjiGrade は中央揃え
     borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -95,17 +131,38 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   kanjiChar: {
-    fontSize: 64, // 大きくしてインパクトを出す
+    fontSize: 64, 
     fontWeight: "bold",
     marginBottom: 16,
   },
-  kanjiReading: {
-    fontWeight: "600",
-    marginBottom: 8,
-    fontSize: 18,
+  
+  // ▼▼▼ スタイル修正 ▼▼▼
+  // 読み（訓・音）を表示するためのラッパー
+  readingWrapper: {
+    flexDirection: 'row', // ラベルと読みを横並び
+    width: '100%',        // コンテナの幅いっぱいに
+    marginBottom: 8,      // 読み同士の余白
+    paddingHorizontal: 4, // 左右のパディング
   },
+  
+  // 「訓:」「音:」のラベル
+  readingLabel: {
+    fontWeight: '600',
+    fontSize: 18,
+    marginRight: 8,    // ラベルと読みの間の余白
+  },
+
+  // 読みテキスト本体
+  kanjiReading: {
+    fontWeight: '600',
+    fontSize: 18,
+    flex: 1, // 残りのスペースをすべて使い、テキストを折り返す
+  },
+  // ▲▲▲ 修正完了 ▲▲▲
+
   kanjiGrade: {
     fontSize: 16,
-    color: "#6B7280" // gray-500
+    color: "#6B7280", // gray-500
+    marginTop: 8, // 読み方リストとの間に少し余白を追加
   },
 });

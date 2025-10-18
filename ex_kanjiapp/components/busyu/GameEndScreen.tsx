@@ -14,7 +14,7 @@ interface GameEndScreenProps {
   currentRadical: string;
   foundKanji: Kanji[];
   allKanji: Kanji[];
-  isGameClear:boolean;
+  isGameClear:boolean;  
   onReplay: () => void;
   onReturn: () => void;
 }

@@ -1,57 +1,138 @@
-import { ProcessedDataProps } from "@/app/busyu";
+import { ProcessedDataProps } from "@/app/busyu"; // ProcessedDataProps をインポート
 import { kankenToGakusei } from "@/assets/kankenToGrade";
 import { RefreshCw, Trophy } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
+import ConfettiAnimation from "./ConfettiAnimation";
+import { FoundKanjiList } from "./FoundKanjiList";
+import GameEndScreen from "./GameEndScreen";
+import { QuizInputSection } from "./QuizInputSection";
 import ResultFlash from "./ResultFlash";
 
-// interface processedDataProps {
-//     radical: string;
-//     reading: string;
-//     kanji: {
-//         char: string;
-//         readings: string[];
-//         meaning: string[];
-//         grade: number;
-//         kanken: number;
-//         kakusuu: number;
-//         busyu: string;
-//     }[];
+// ------------------------------------
+// ヘルパーコンポーネント: ScrollableContainer
+// ------------------------------------
+const ScrollableContainer = ({children}: {children: React.ReactNode}) => {
+  // WebではKeyboardAvoidingViewは不要なため、シンプルなViewでラップ
+  if(Platform.OS === 'web'){
+    return <View style={fullScreenStyles.flexContainer}><ScrollView contentContainerStyle={fullScreenStyles.scrollContent}>{children}</ScrollView></View>
+  }
+  // iOS or Android では KeyboardAvoidingView と ScrollView を組み合わせる
+  return (
+    <KeyboardAvoidingView
+      style={fullScreenStyles.flexContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <ScrollView contentContainerStyle={fullScreenStyles.scrollContent}>{children}</ScrollView>
+    </KeyboardAvoidingView>
+  )
+}
+
+// ------------------------------------
+// 型定義
+// ------------------------------------
+
+// export interface ProcessedDataProps {
+//   radical: string;
+//   reading: string;
+//   kanji: {
+//     char: string;
+//     kunyomi?: string[];
+//     onyomi?: string[];
+//     readings: string[];
+//     meaning: string[];
+//     grade: number;
+//     kanken: number;
+//     kakusuu: number;
+//     busyu: string;
+//   }[];
 // }
 
-export interface  prpcessedKanji {
-        char: string;
-        readings: string[];
-        meaning: string[];
-        grade: number;
-        kanken: number;
-        kakusuu: number;
-        busyu: string;
-  }
-  
+export type KanjiData = ProcessedDataProps['kanji'][number];
 
 interface QuizScreenProps{
   currentRadicalKanji:ProcessedDataProps
 }
 
+
+// ------------------------------------
+// メインコンポーネント
+// ------------------------------------
 export default function QuizScreen({
   currentRadicalKanji
 }:QuizScreenProps){
   const [score , setScore] = useState<number>(0)
   const [isHintVisible,setIsHintVisible] = useState<boolean>(false);
-
-  //textinput 
   const [inputText , setInputText] = useState<string>("");
-  const [foundKanji , setFoundKanji] = useState<prpcessedKanji[]>([]);
+  const [foundKanji , setFoundKanji] = useState<KanjiData[]>([]); 
   const inputRef = useRef<TextInput>(null);
-
-  //resultFlash
-  const [collectedKanji , setCollectedKanji] = useState<prpcessedKanji | null>();
+  const [collectedKanji , setCollectedKanji] = useState<KanjiData | null>();
   const [showResultFlash,setShowResultFlash] = useState<boolean>(false);
+  const [isGamePlaying ,setIsPlaying] = useState<boolean>(true); // ゲームプレイ中/結果表示切り替え
 
-  // 結果表示の管理
+  // --- 計算済み値 (useMemo) ---
+  const unfoundKanji = useMemo(()=>
+    currentRadicalKanji.kanji.filter(
+      k => !foundKanji.some(f => f.char === k.char)
+    ),[currentRadicalKanji.kanji,foundKanji]
+  );
+  
+  const hintList = useMemo(()=>
+    unfoundKanji
+      .sort((a, b) =>b.kanken -  a.kanken)
+      .slice(0,20)
+      .map((k) => `${k.meaning[0]} （${kankenToGakusei(k.kanken)} ）`)
+  ,[unfoundKanji]);
+
+  // --- イベントハンドラ (useCallback) ---
+  const findMatchedKAnji = useCallback(
+    (reading:string) => unfoundKanji.find( k => k.readings.includes(reading)),
+    [unfoundKanji]
+  );
+  
+  const checkAnswer= useCallback(() => {
+    if(!inputText.trim()) return;
+    
+    const answer = inputText.trim().toLocaleLowerCase();
+    const matchedKanji = findMatchedKAnji(answer); // matchedKanji は KanjiData | undefined 型
+
+    let wasCorrect = false;
+    
+    if(matchedKanji){
+      setScore(current => current + 10);
+      setFoundKanji(prev => [...prev , matchedKanji]);
+      setCollectedKanji(matchedKanji);
+      wasCorrect = true;
+    }
+    setInputText("");
+
+    if(!wasCorrect && isGamePlaying){
+      requestAnimationFrame(()=>{
+        inputRef.current?.focus();
+      });
+    }
+  }, [inputText, findMatchedKAnji, isGamePlaying, inputRef]); // ▼ 依存配列を修正
+
+  const onPlayingChange = useCallback(() => {
+    setIsPlaying(prev => !prev);
+  }, []); // 依存配列を空に
+
+  const toggleHint = useCallback(() => {
+    setIsHintVisible(prev => !prev);
+  }, []); // 依存配列を空に
+
+  // --- 副作用 (useEffect) ---
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     if (collectedKanji) {
@@ -66,208 +147,134 @@ export default function QuizScreen({
     };
   }, [collectedKanji]);
 
-  // 結果フラッシュが閉じたタイミングでフォーカス
   useEffect(() => {
-    if (!showResultFlash) {
+    // ResultFlashが非表示になった後、かつゲームプレイ中にフォーカスを戻す
+    if (!showResultFlash && isGamePlaying) { 
       requestAnimationFrame(()=>{
         inputRef.current?.focus();
       })
     }
-  }, [showResultFlash]);
+  }, [showResultFlash, isGamePlaying]); // isGamePlayingも依存配列に追加
 
-   
-  const unfoundKanji = useMemo(()=>
-      currentRadicalKanji.kanji.filter(
-        k => !foundKanji.some(f => f.char === k.char)
-      ),[currentRadicalKanji.kanji,foundKanji]
-    )
-
-  const findMatchedKAnji = useCallback(
-    (reading:string) => unfoundKanji.find( k => k.readings.includes(reading)),
-    [unfoundKanji]
-  )
-  
-    // ヒントリストの生成
-  const hintList = useMemo(()=>
-    unfoundKanji
-      .sort((a, b) =>b.kanken -  a.kanken)
-      .slice(0,5)
-      .map((k) => `${k.meaning}（${k.kanken ? kankenToGakusei(k.kanken) + "-------------答え：" + k.char : "不明"}）`)
-  ,[unfoundKanji])
-
-  
-    //イベントハンドラー
-  const checkAnswer=()=>{
-    if(!inputText.trim()) return;
-    
-    const answer = inputText.trim().toLocaleLowerCase();
-    const matchedKanji = findMatchedKAnji(answer);
-    
-    if(matchedKanji){
-      setScore(current => current + 10);
-      setFoundKanji(prev => [...prev , matchedKanji]);
-      setCollectedKanji(matchedKanji);
-    }
-    setInputText("")
-  }
-
-
-  const onEnd =()=>{
-    return
-  }
-
-  const toggleHint =()=>{
-    setIsHintVisible(!isHintVisible);
-  }
-
+  // ------------------------------------
+  // メインレンダリング
+  // ------------------------------------
   return(
-    <SafeAreaView style={{ flex: 1 }}>
-      {/* インフォバー */}
-        <View style={bar_styles.barContainer}>
-          {/* 左側：得点 */}
-          <View style={bar_styles.leftSection}>
-            <Trophy color="#eab308" size={24} />
-            <Text style={bar_styles.scoreText}>{score}点</Text>
-          </View>
+    <ScrollableContainer>
+      {/* 1.クイズ終了後のアニメーション */}
+      {!isGamePlaying &&  (
+        <ConfettiAnimation  
+          score={score}
+          pointerEvents="none"
+        />
+      )}
 
-          
-          {/* 右側：リセットボタン */}
-          <TouchableOpacity onPress={onEnd} style={bar_styles.resetButton}>
-            <RefreshCw color="white" size={16} />
-            <Text style={bar_styles.resetButtonText}>答えを見る</Text>
-          </TouchableOpacity>
+      {/* 1. 正解フラッシュ (最前面) */}
+      { showResultFlash && collectedKanji && (
+        <ResultFlash 
+          currentRadicalKanji={currentRadicalKanji}
+          collectKanji={collectedKanji} // collectedKanji は KanjiData | null 型
+        />
+      )}
+
+
+
+      {/* 2. インフォバー */}
+      <View style={bar_styles.barContainer}>
+        <View style={bar_styles.leftSection}>
+          <Trophy color="#eab308" size={24} />
+          <Text style={bar_styles.scoreText}>{foundKanji.length} 個（残り：{currentRadicalKanji.kanji.length - foundKanji.length}個）</Text>
+
         </View>
+        <TouchableOpacity onPress={onPlayingChange} style={bar_styles.resetButton}>
+          <RefreshCw color="white" size={16} />
+          <Text style={bar_styles.resetButtonText}>
+            {isGamePlaying ? "答え":"再開する"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* 部首と漢字数 */}
-        <View style={main_styles.container}>
-            <View style={main_styles.radicalContainer}>
-                <Text style={main_styles.radicalText}>
-                    {currentRadicalKanji.radical}
-                </Text>
-            </View>
-            <Text style={main_styles.countText}>{currentRadicalKanji.reading}</Text>
-            <Text style={main_styles.countText}>（ 全 {currentRadicalKanji.kanji.length} 個 ）</Text>
-        </View>
 
-        <View style={kanjiInput_styles.container}>
-          <TextInput
-            style={kanjiInput_styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={checkAnswer} // Enterキー押下時のイベント
-            placeholder="読み方をひらがなで入力"
-            placeholderTextColor="#9ca3af" // gray-400
-            autoCapitalize="none"
-            autoFocus={true}
-            submitBehavior="blurAndSubmit"
-          />
-          <View style={kanjiInput_styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={checkAnswer}
-              disabled={!inputText.trim()}
-              // disabled状態に応じてスタイルを動的に変更
-              style={[
-                kanjiInput_styles.buttonBase,
-                kanjiInput_styles.submitButton,
-                !inputText.trim() && kanjiInput_styles.disabledButton,
-              ]}
-            >
-              <Text style={kanjiInput_styles.buttonText}>答える</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={toggleHint}
-              style={[kanjiInput_styles.buttonBase, kanjiInput_styles.hintButton]}
-            >
-              <Text style={kanjiInput_styles.buttonText}>
-                {isHintVisible ? "ヒントを隠す" : "ヒントを見る"}
+      {/* 3. 部首情報 */}
+      <View style={main_styles.container}>
+          <Text style={main_styles.countText}>{currentRadicalKanji.reading}</Text>
+          <View style={main_styles.radicalContainer}>
+              <Text style={main_styles.radicalText}>
+                  {currentRadicalKanji.radical}
               </Text>
-            </TouchableOpacity>
           </View>
-    
-          {/* ヒント表示エリア */}
-          {isHintVisible && hintList.length > 0 && (
-            <View style={kanjiInput_styles.hintBox}>
-              <Text style={kanjiInput_styles.hintTitle}>ヒント（意味のみ）</Text>
-              {/* propsで受け取った hintList を直接使用 */}
-              {hintList.map((hint, idx) => (
-                <Text key={idx} style={kanjiInput_styles.hintItem}>
-                  • {hint}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
-
-        { showResultFlash && collectedKanji && (
-          <ResultFlash 
-            kanji={collectedKanji}
+      </View>
+      
+      {/* 4. メインコンテンツの切り替え */}
+      { isGamePlaying ? (
+        <>
+          {/* プレイ中のUI: propsを渡してコンポーネントを呼び出す */}
+          <QuizInputSection
+            inputRef={inputRef}
+            inputText={inputText}
+            setInputText={setInputText}
+            checkAnswer={checkAnswer}
+            toggleHint={toggleHint}
+            isHintVisible={isHintVisible}
+            hintList={hintList}
           />
-        )}
+          <FoundKanjiList
+            foundKanji={foundKanji} // foundKanji は KanjiData[] 型
+          />
+        </>
+      ) : (
+        /* 結果表示UI */
+        <GameEndScreen 
+          score={score}
+          currentRadicalKanji={currentRadicalKanji}
+          foundKanji={foundKanji}
+          isGameClear={foundKanji.length === currentRadicalKanji.kanji.length}
+        />
+      )}
 
-
-{/* テスト*/}
-        {foundKanji.map((k,idx)=>(
-          <View key={idx}>
-            <Text>{k.char}</Text>
-          </View>
-        ))}
-    
-
-
-    </SafeAreaView>
+      {/* 最下部のスペーサー */}
+      <View style={{ height: 100 }} /> 
+    </ScrollableContainer>
   )
 }
 
+// ------------------------------------
+// スタイルシート
+// ------------------------------------
+const fullScreenStyles = StyleSheet.create({
+  flexContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1, // コンテンツが短い場合でもScrollView全体を占有
+  }
+});
 
-// StyleSheetを使ってスタイリングを定義
 const bar_styles = StyleSheet.create({
   barContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    flexWrap: "wrap", // 画面幅が狭い場合に折り返す
-    gap: 16, // 各セクション間の余白
-    paddingHorizontal: 8, // 水平方向のパディング
+    flexWrap: "wrap",
+    gap: 16,
+    paddingHorizontal: 8,
     paddingVertical: 12,
   },
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8, // 要素間の余白
-    minWidth: 140,
-  },
-  timerText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ef4444", // red-500
-  },
-  toggleButton: {
-    backgroundColor: "#f59e0b", // yellow-500
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  toggleButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  centerSection: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 8,
-    minWidth: 60,
+    minWidth: 140,
   },
   scoreText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#ca8a04", // yellow-600
+    color: "#ca8a04",
   },
   resetButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#6b7280", // gray-500
+    backgroundColor: "#6b7280",
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -275,115 +282,29 @@ const bar_styles = StyleSheet.create({
   resetButtonText: {
     color: "white",
     fontSize: 14,
-  },
-  radicalContainer: {
-      backgroundColor: '#DBEAFE', // Tailwindのbg-blue-100に近い色
-      borderRadius: 8,           // rounded-lg
-      padding: 12,               // p-8        // mb-4 (元のmb-2より少し大きめに調整)
-      alignItems: 'center',
-      justifyContent: 'center',
-  },
-  radicalText: {
-      fontSize: 80,              // text-8xlに近いサイズ
-      fontWeight: 'bold',        // font-bold
-      color: '#1E40AF',          // text-blue-800に近い色
-  },
-  countText: {
-      color: '#374151',          // text-gray-700に近い色
-      fontSize: 16,              // text-base
+    padding: 2,
   },
 });
 
-const main_styles = StyleSheet.create({
+export const main_styles = StyleSheet.create({
     container: {
-        alignItems: 'center', // 子要素を中央揃えにする (text-centerの代替)
+        alignItems: 'center',
         justifyContent: 'center',
     },
     radicalContainer: {
-        backgroundColor: '#DBEAFE', // Tailwindのbg-blue-100に近い色
-        borderRadius: 8,           // rounded-lg
-        padding: 6,               // p-8        // mb-4 (元のmb-2より少し大きめに調整)
+        backgroundColor: '#DBEAFE',
+        borderRadius: 8,
+        padding: 6,
         alignItems: 'center',
         justifyContent: 'center',
     },
     radicalText: {
-        fontSize: 70,              // text-8xlに近いサイズ
-        fontWeight: 'bold',        // font-bold
-        color: '#1E40AF',          // text-blue-800に近い色
+        fontSize: 60,
+        fontWeight: 'bold',
+        color: '#1E40AF',
     },
     countText: {
-        color: '#374151',          // text-gray-700に近い色
-        fontSize: 16,              // text-base
+        color: '#374151',
+        fontSize: 16,
     },
-});
-
-
-// スタイル定義 (変更なし)
-const kanjiInput_styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    width: "100%",
-    padding: 16,
-  },
-  input: {
-    fontSize: 16,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: "#d1d5db", // gray-300
-    borderRadius: 8,
-    width: "80%",
-    textAlign: "center",
-    backgroundColor: "white",
-  },
-  buttonContainer: {
-    marginTop: 16,
-    marginBottom: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-    flexWrap: "wrap", // 小さい画面でもボタンが収まるように
-  },
-  buttonBase: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 140, // ボタンの最小幅を確保
-  },
-  submitButton: {
-    backgroundColor: "#22c55e", // green-500
-  },
-  hintButton: {
-    backgroundColor: "#f97316", // orange-500
-  },
-  disabledButton: {
-    backgroundColor: "#d1d5db", // gray-300
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  hintBox: {
-    marginTop: 16,
-    backgroundColor: "#fef3c7", // yellow-100
-    borderColor: "#fde047", // yellow-300
-    borderWidth: 1,
-    padding: 16,
-    borderRadius: 8,
-    width: "100%",
-  },
-  hintTitle: {
-    fontWeight: "600",
-    marginBottom: 8,
-    fontSize: 16,
-    color: "#374151", // gray-800
-  },
-  hintItem: {
-    fontSize: 14,
-    color: "#4b5563", // gray-700
-    marginBottom: 4,
-  },
 });

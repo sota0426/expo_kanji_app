@@ -8,8 +8,10 @@ import { Button, SafeAreaView, StyleSheet } from "react-native";
 // --- ヘルパー関数 (変更なし) ---
 const kanaToHiragana = (str: string) =>
   str.replace(/[ァ-ヶ]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0x60));
+
 const toHalfWidth = (str: string) =>
   str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
+
 const parseGrade = (gradeStr: string): number => {
   const raw = toHalfWidth(gradeStr || "");
   const match = raw.match(/\d+/);
@@ -22,6 +24,8 @@ export interface ProcessedDataProps {
   reading: string;
   kanji: {
     char: string;
+    kunyomi?: string[];
+    onyomi?: string[];
     readings: string[];
     meaning: string[];
     grade: number;
@@ -45,6 +49,8 @@ export default function QuizStarter() {
         readings: [...(k.onyomi || []), ...(k.kunyomi || [])].map((r) =>
           kanaToHiragana(r.replace(/（.*?）/g, ""))
         ),
+        kunyomi: k.kunyomi || [],
+        onyomi: k.onyomi || [],
         meaning: [(k.meaning?.[0] || "").replace(/。$/, "")],
         grade: parseGrade(k.grade || ""),
         kanken: k.kanken || 99,
@@ -81,23 +87,25 @@ export default function QuizStarter() {
 
   // ★★ 追加: クイズ画面からリストに戻る処理 ★★1
   const handleBack = () => {
-    router.push("/")
+    router.back();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      
-      <Button
-        color="gray"
-        title="home"
-        onPress={handleBack}
-       />
-       
+             
       {!currentRadicalData ? (
-        <RadicalList 
-          radicals={radicalWithCount} 
-          onSelect={onSelect} 
+        <>
+        <Button
+          color="gray"
+          title="ホームに戻る"
+          onPress={handleBack}
         />
+        
+          <RadicalList 
+            radicals={radicalWithCount} 
+            onSelect={onSelect} 
+          />
+        </>
       ) : (
         <QuizScreen
           currentRadicalKanji={currentRadicalData}

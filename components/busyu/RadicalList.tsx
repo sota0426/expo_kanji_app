@@ -1,6 +1,7 @@
 // -----------------------
 // components\busyu\RadicalList.tsx
 // -----------------------
+import { Shuffle } from "lucide-react-native";
 import React, { useEffect } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
 
@@ -23,8 +24,26 @@ export default function RadicalList({
         console.log(JSON.stringify(radicals, null, 2));
     }, [radicals]);
 
+    const onRandomSelect = () => {
+        const randomIndex = Math.floor(Math.random() * radicals.length);
+        const randomRadical = radicals[randomIndex].radical;
+        onSelect(randomRadical);
+    }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity
+        onPress={onRandomSelect}
+        style={[styles.card, { backgroundColor: "gray" }]} // 青みがかった背景色
+        activeOpacity={0.7} // タップ時の透明度
+      >
+      <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
+        <Shuffle color="white" size={20}/>
+         <Text style ={{ fontSize:18, color: "white", fontWeight: "bold" }}>
+          ランダムに選択
+        </Text>
+      </View>
+      </TouchableOpacity>
       {radicals
         .filter(({ count }) => count > 10)
         .map(({ radical, count, reading }) => (
@@ -63,8 +82,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16, // カード間の垂直方向の余白
-    // 2カラムにするための幅設定 (余白を考慮)
-    width: "30%",
+    width: "80%",
 
     // iOS用の影
     shadowColor: "#000",
