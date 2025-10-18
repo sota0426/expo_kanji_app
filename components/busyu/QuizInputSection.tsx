@@ -7,7 +7,9 @@ interface QuizInputSectionProps {
   setInputText: (text: string) => void;
   checkAnswer: () => void;
   toggleHint: () => void;
+  toggleCard:()=>void;
   isHintVisible: boolean;
+  isShowCard:boolean;
   hintList: string[];
 }
 
@@ -17,7 +19,9 @@ export const QuizInputSection = React.memo(function QuizInputSection({
   setInputText,
   checkAnswer,
   toggleHint,
+  toggleCard,
   isHintVisible,
+  isShowCard,
   hintList,
 }:QuizInputSectionProps) {
   return (
@@ -51,6 +55,16 @@ export const QuizInputSection = React.memo(function QuizInputSection({
           <Text style={kanjiInput_styles.buttonText}>
             {isHintVisible ? "ヒントを隠す" : "ヒントを見る"}
           </Text>
+
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={toggleCard}
+          style={[kanjiInput_styles.buttonBase, kanjiInput_styles.cardButton]}
+        >
+          <Text style={kanjiInput_styles.buttonText}>
+            {isShowCard ? "カードを隠す" : "カードを見る"}
+          </Text>
+
         </TouchableOpacity>
       </View>
 
@@ -111,6 +125,10 @@ const kanjiInput_styles = StyleSheet.create({
   hintButton: {
     backgroundColor: "#f97316",
   },
+  cardButton: {
+    backgroundColor: "#1671f9ff",
+  },
+
   disabledButton: {
     backgroundColor: "#d1d5db",
   },

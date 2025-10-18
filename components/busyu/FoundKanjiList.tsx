@@ -22,13 +22,16 @@ interface FoundKanjiListProps {
   foundKanji: KanjiData[];
   allKanji?: KanjiData[]; 
   isGamePlaying:boolean;
+  isCardShow:boolean;
 }
 
 export const FoundKanjiList = React.memo(function FoundKanjiList({
   foundKanji,
   allKanji, 
-  isGamePlaying
+  isGamePlaying,
+  isCardShow=true
 }: FoundKanjiListProps){
+
 
   const [selectedKanji, setSelectedKanji] = useState<KanjiData | null>(null);
 
@@ -61,6 +64,7 @@ export const FoundKanjiList = React.memo(function FoundKanjiList({
   const kankenLabel = (level:number)=>
     level % 1 === 0 ? `${level}級` : `準${Math.floor(level)}級`
   
+  if(!isCardShow) return ;
 
   return (
     <View style={styles.listContainer}>

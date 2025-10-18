@@ -91,6 +91,7 @@ export default function QuizScreen({
   const [collectedKanji , setCollectedKanji] = useState<KanjiData | null>();
   const [showResultFlash,setShowResultFlash] = useState<boolean>(false);
   const [isGamePlaying ,setIsPlaying] = useState<boolean>(true); // ゲームプレイ中/結果表示切り替え
+  const [isCardShow , setIsCardShow] = useState<boolean>(false);
 
   const currentAllKanji:KanjiData[] = currentRadicalKanji.kanji;
 
@@ -135,6 +136,7 @@ export default function QuizScreen({
         inputRef.current?.focus();
       });
     }
+
   }, [inputText, findMatchedKAnji, isGamePlaying, inputRef]); // ▼ 依存配列を修正
 
   const onPlayingChange = useCallback(() => {
@@ -144,6 +146,11 @@ export default function QuizScreen({
   const toggleHint = useCallback(() => {
     setIsHintVisible(prev => !prev);
   }, []); // 依存配列を空に
+
+    const toggleCard = useCallback(() => {
+    setIsCardShow(prev => !prev);
+  }, []); // 依存配列を空に
+
 
   // --- 副作用 (useEffect) ---
   useEffect(() => {
@@ -199,11 +206,16 @@ export default function QuizScreen({
           <Text style={bar_styles.scoreText}>{foundKanji.length} 個（残り：{currentRadicalKanji.kanji.length - foundKanji.length}個）</Text>
 
         </View>
-        <TouchableOpacity onPress={onPlayingChange} style={bar_styles.resetButton}>
-          <RefreshCw color="white" size={16} />
-          <Text style={bar_styles.resetButtonText}>
-            {isGamePlaying ? "答えを見る":"クイズを再開する"}
-          </Text>
+        <TouchableOpacity 
+          onPress={()=>{
+            onPlayingChange();
+            if(isGamePlaying) return setIsCardShow(true);
+          }} 
+          style={bar_styles.resetButton}>
+            <RefreshCw color="white" size={16} />
+            <Text style={bar_styles.resetButtonText}>
+              {isGamePlaying ? "答えを見る":"クイズを再開する"}
+            </Text>
         </TouchableOpacity>
       </View>
 
@@ -227,8 +239,10 @@ export default function QuizScreen({
             setInputText={setInputText}
             checkAnswer={checkAnswer}
             toggleHint={toggleHint}
+            toggleCard={toggleCard}
             isHintVisible={isHintVisible}
             hintList={hintList}
+            isShowCard={isCardShow}
           />
         </View>
       ) : (
@@ -245,6 +259,7 @@ export default function QuizScreen({
           foundKanji={foundKanji} 
           allKanji={currentAllKanji}
           isGamePlaying={isGamePlaying}
+          isCardShow={isCardShow}
         />
         
       {/* 最下部のスペーサー */}
