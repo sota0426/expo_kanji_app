@@ -11,8 +11,7 @@ interface QuizInputSectionProps {
   hintList: string[];
 }
 
-// React.memoでラップして、propsが変更されない限り再レンダリングを防ぐ
-export const QuizInputSection: React.FC<QuizInputSectionProps> = React.memo(({
+export const QuizInputSection = React.memo(function QuizInputSection({
   inputRef,
   inputText,
   setInputText,
@@ -20,7 +19,7 @@ export const QuizInputSection: React.FC<QuizInputSectionProps> = React.memo(({
   toggleHint,
   isHintVisible,
   hintList,
-}) => {
+}:QuizInputSectionProps) {
   return (
     <View style={kanjiInput_styles.container}>
       <TextInput
@@ -77,7 +76,7 @@ const kanjiInput_styles = StyleSheet.create({
   container: {
     alignItems: "center",
     width: "100%",
-    padding: 16,
+    padding:16,
   },
   input: {
     fontSize: 16,

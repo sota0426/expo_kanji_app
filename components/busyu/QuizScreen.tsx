@@ -18,6 +18,7 @@ import { FoundKanjiList } from "./FoundKanjiList";
 import GameEndScreen from "./GameEndScreen";
 import { QuizInputSection } from "./QuizInputSection";
 import ResultFlash from "./ResultFlash";
+import { KanjiData, main_styles } from "./styles";
 
 // ------------------------------------
 // ヘルパーコンポーネント: ScrollableContainer
@@ -59,7 +60,17 @@ const ScrollableContainer = ({children}: {children: React.ReactNode}) => {
 //   }[];
 // }
 
-export type KanjiData = ProcessedDataProps['kanji'][number];
+// (alias) type KanjiData = {
+//     char: string;
+//     kunyomi?: string[] | undefined;
+//     onyomi?: string[] | undefined;
+//     readings: string[];
+//     meaning: string[];
+//     grade: number;
+//     kanken: number;
+//     kakusuu: number;
+//     busyu: string;
+// }
 
 interface QuizScreenProps{
   currentRadicalKanji:ProcessedDataProps
@@ -81,6 +92,8 @@ export default function QuizScreen({
   const [showResultFlash,setShowResultFlash] = useState<boolean>(false);
   const [isGamePlaying ,setIsPlaying] = useState<boolean>(true); // ゲームプレイ中/結果表示切り替え
 
+  const currentAllKanji:KanjiData[] = currentRadicalKanji.kanji;
+
   // --- 計算済み値 (useMemo) ---
   const unfoundKanji = useMemo(()=>
     currentRadicalKanji.kanji.filter(
@@ -91,7 +104,7 @@ export default function QuizScreen({
   const hintList = useMemo(()=>
     unfoundKanji
       .sort((a, b) =>b.kanken -  a.kanken)
-      .slice(0,20)
+      .slice(0,10)
       .map((k) => `${k.meaning[0]} （${kankenToGakusei(k.kanken)} ）`)
   ,[unfoundKanji]);
 
@@ -110,7 +123,7 @@ export default function QuizScreen({
     let wasCorrect = false;
     
     if(matchedKanji){
-      setScore(current => current + 10);
+      setScore(current => current + 1);
       setFoundKanji(prev => [...prev , matchedKanji]);
       setCollectedKanji(matchedKanji);
       wasCorrect = true;
@@ -140,7 +153,7 @@ export default function QuizScreen({
       timer = setTimeout(() => {
         setShowResultFlash(false);
         setCollectedKanji(null);
-      }, 1500);
+      }, 2000);
     }
     return () => {
       if (timer) clearTimeout(timer);
@@ -160,6 +173,7 @@ export default function QuizScreen({
   // メインレンダリング
   // ------------------------------------
   return(
+    
     <ScrollableContainer>
       {/* 1.クイズ終了後のアニメーション */}
       {!isGamePlaying &&  (
@@ -172,8 +186,7 @@ export default function QuizScreen({
       {/* 1. 正解フラッシュ (最前面) */}
       { showResultFlash && collectedKanji && (
         <ResultFlash 
-          currentRadicalKanji={currentRadicalKanji}
-          collectKanji={collectedKanji} // collectedKanji は KanjiData | null 型
+          collectKanji={collectedKanji} 
         />
       )}
 
@@ -189,7 +202,7 @@ export default function QuizScreen({
         <TouchableOpacity onPress={onPlayingChange} style={bar_styles.resetButton}>
           <RefreshCw color="white" size={16} />
           <Text style={bar_styles.resetButtonText}>
-            {isGamePlaying ? "答え":"再開する"}
+            {isGamePlaying ? "答えを見る":"クイズを再開する"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -207,8 +220,7 @@ export default function QuizScreen({
       
       {/* 4. メインコンテンツの切り替え */}
       { isGamePlaying ? (
-        <>
-          {/* プレイ中のUI: propsを渡してコンポーネントを呼び出す */}
+        <View style={{marginTop:20}}>
           <QuizInputSection
             inputRef={inputRef}
             inputText={inputText}
@@ -218,20 +230,23 @@ export default function QuizScreen({
             isHintVisible={isHintVisible}
             hintList={hintList}
           />
-          <FoundKanjiList
-            foundKanji={foundKanji} // foundKanji は KanjiData[] 型
-          />
-        </>
+        </View>
       ) : (
         /* 結果表示UI */
-        <GameEndScreen 
-          score={score}
-          currentRadicalKanji={currentRadicalKanji}
-          foundKanji={foundKanji}
-          isGameClear={foundKanji.length === currentRadicalKanji.kanji.length}
-        />
+          <GameEndScreen 
+            score={score}
+            currentRadicalKanji={currentRadicalKanji}
+            foundKanji={foundKanji}
+            isGameClear={foundKanji.length === currentRadicalKanji.kanji.length}
+          />
       )}
 
+        <FoundKanjiList
+          foundKanji={foundKanji} 
+          allKanji={currentAllKanji}
+          isGamePlaying={isGamePlaying}
+        />
+        
       {/* 最下部のスペーサー */}
       <View style={{ height: 100 }} /> 
     </ScrollableContainer>
@@ -284,27 +299,4 @@ const bar_styles = StyleSheet.create({
     fontSize: 14,
     padding: 2,
   },
-});
-
-export const main_styles = StyleSheet.create({
-    container: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    radicalContainer: {
-        backgroundColor: '#DBEAFE',
-        borderRadius: 8,
-        padding: 6,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    radicalText: {
-        fontSize: 60,
-        fontWeight: 'bold',
-        color: '#1E40AF',
-    },
-    countText: {
-        color: '#374151',
-        fontSize: 16,
-    },
 });

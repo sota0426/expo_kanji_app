@@ -1,15 +1,15 @@
 import { ProcessedDataProps } from '@/app/busyu';
 import React, { useMemo } from 'react';
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { KanjiData } from './QuizScreen';
+import { KanjiData } from './styles';
 
 
 interface GameEndScreenProps {
@@ -26,6 +26,7 @@ export default function GameEndScreen({
   foundKanji,
   isGameClear,
 }: GameEndScreenProps) {
+  
   const { width, height } = useWindowDimensions();
 
   // 🚀 isAnimationのロジックを復元 (スコアが15点以上またはゲームクリア)
@@ -51,17 +52,11 @@ export default function GameEndScreen({
 
   return (
     <View style={styles.container}>
-      
-
       {/* メッセージ */}
-      <Text style={styles.title}>答え合わせ</Text>
-      <Text style={styles.scoreText}>{score}点</Text>
-      {/* <Text style={styles.messageText}>{message(score)}</Text> */}
+      <Text style={styles.title}>（全{allKanjiCount} 個）</Text>
+      <Text style={styles.scoreText}>正解 {foundKanjiCount} 個</Text>
+      <Text style={styles.messageText}>{message}</Text>
             
-      <Text style={styles.summaryText}>
-        部首「{currentRadicalKanji.radical}」で {foundKanjiCount} / {allKanjiCount} 個の漢字を発見しました！
-      </Text>
-
       {/* <AllKanjiList /> はここに追加 */}
 
       <View style={styles.buttonContainer}>
@@ -83,6 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', // text-center
     backgroundColor: 'white',
     borderRadius: 8,
+    marginTop:20,
     padding: 32, // p-8 (8 * 4 = 32)
     // 影のスタイル (shadow-lg)
     shadowColor: '#000',
@@ -102,7 +98,7 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 60,
     fontWeight: 'bold',
-    color: '#2563EB', // blue-600
+    color: 'red', // blue-600
     marginBottom: 16,
   },
   

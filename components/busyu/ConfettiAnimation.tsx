@@ -8,7 +8,7 @@ import Confetti from 'react-native-confetti';
 
 interface ConfettiAnimationProps {
     score: number;
-    pointerEvents?: 'auto' | 'none';
+    pointerEvents?: 'box-none' | 'box-only' | 'none' | 'auto';
 }
 
 export default function ConfettiAnimation({
@@ -18,28 +18,29 @@ export default function ConfettiAnimation({
     const { width, height } = useWindowDimensions();
     const confettiRef = React.useRef<Confetti>(null);
 
-    if(score < 15){
-        return null;
-    }
-
 
     // アニメーションの制御ロジック
     useEffect(() => {
-        if (confettiRef.current) {
+        const confetti = confettiRef.current;
+
+        if (score >= 5 && confettiRef.current) {
             confettiRef.current.startConfetti();
         }
 
         // クリーンアップ関数
         return () => {
-            if (confettiRef.current) {
-                confettiRef.current.stopConfetti();
+            if (confetti) {
+                confetti.stopConfetti();
             }
         };
-    }, []);
+    }, [score]);
 
     // アニメーションを画面全体に表示するためのWrapper
     return (
-        <View style={[styles.confettiWrapper, { width, height }]}>
+        <View 
+            style={[styles.confettiWrapper, { width, height }]}
+            pointerEvents={pointerEvents}    
+        >
             <Confetti
                 ref={confettiRef}
                 timeout={5} 

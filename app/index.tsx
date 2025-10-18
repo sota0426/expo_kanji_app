@@ -1,7 +1,6 @@
-// app/index.js (or your desired screen file)
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Home() {
@@ -33,47 +32,48 @@ export default function Home() {
       difficulty: "上級",
       icon: "📚"
     },      
-    // {
-    //   title: "２×２の掛け算クイズ",
-    //   description: "２×２の掛け算をひたすら行う",
-    //   path: "/kakezan", 
-    //   disabled: false,
-    //   genre: "算数",
-    //   difficulty: "初級",
-    //   icon: "✖️"
-    // },
-    // {
-    //     title: "近日公開",
-    //     description: "新しいクイズを準備中です。",
-    //     path: "/", 
-    //     disabled: true,
-    //     genre: "算数",
-    //     difficulty: "",
-    //     icon: "✨"
-    // },
   ];
 
-  const groupedQuizzes = quizzes.reduce<Record<string, typeof quizzes>>((
-    acc,
-    quiz
-  ) => {
-    if (!acc[quiz.genre]) {
-      acc[quiz.genre] = [];
-    }
+  const groupedQuizzes = quizzes.reduce<Record<string, typeof quizzes>>((acc, quiz) => {
+    if (!acc[quiz.genre]) acc[quiz.genre] = [];
     acc[quiz.genre].push(quiz);
     return acc;
   }, {});
-  
-    // 戻り値の型を string[] から [string, string] に変更
+
   const getGenreColors = (genre:string): [string, string]  => {
     switch (genre) {
       case "漢字": return ["#c084fc", "#f472b6"];
       case "算数": return ["#60a5fa", "#22d3ee"];
       case "英語": return ["#4ade80", "#34d399"];
-      // defaultケースも要素数を2つに揃える
       default: return ["#9ca3af", "#6b7280"];
     }
   };
+
+  // 📱 動的に画面サイズを取得してカード幅を更新
+  const [numColumns, setNumColumns] = useState(2);
+  const [cardWidth, setCardWidth] = useState(160);
+
+  useEffect(() => {
+    const updateLayout = () => {
+      const { width } = Dimensions.get('window');
+      let columns = 2;
+      if (width >= 1200) columns = 4;
+      else if (width >= 900) columns = 3;
+      else if (width <= 400) columns = 1;
+      setNumColumns(columns);
+      setCardWidth((width - 48 - (columns * 10)) / columns);
+    };
+    updateLayout();
+    const subscription: any = Dimensions.addEventListener('change', updateLayout);
+    return () => {
+      // Handle different RN versions: some return a subscription with .remove(), others return an unsubscribe function.
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      } else if (typeof subscription === 'function') {
+        subscription();
+      }
+    };
+  }, []);
 
   return (
     <LinearGradient colors={['#f0f4ff', '#ffffff', '#faf5ff']} style={styles.flexContainer}>
@@ -92,9 +92,13 @@ export default function Home() {
               <View style={styles.divider} />
             </View>
             
-            <View style={styles.quizGrid}>
+            <View style={[styles.quizGrid, { justifyContent: numColumns === 1 ? 'center' : 'flex-start' }]}>
               {genreQuizzes.map((quiz, index) => (
-                <View key={index} style={[styles.cardContainer, quiz.disabled && styles.disabledCard]}>
+                <View key={index} style={[
+                  styles.cardContainer,
+                  quiz.disabled && styles.disabledCard,
+                  { width: cardWidth, margin: 5 }
+                ]}>
                   <LinearGradient colors={getGenreColors(quiz.genre)} style={styles.cardTopBorder} />
                   <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
@@ -106,11 +110,11 @@ export default function Home() {
                     
                     <View style={styles.buttonContainer}>
                       {!quiz.disabled ? (
-                        <Link href={quiz.path} asChild>
+                        <Link href={quiz.path as any} asChild>
                           <TouchableOpacity activeOpacity={0.7}>
-                              <LinearGradient colors={getGenreColors(quiz.genre)} style={styles.playButton}>
-                                  <Text style={styles.buttonText}>プレイする</Text>
-                              </LinearGradient>
+                            <LinearGradient colors={getGenreColors(quiz.genre)} style={styles.playButton}>
+                              <Text style={styles.buttonText}>プレイする</Text>
+                            </LinearGradient>
                           </TouchableOpacity>
                         </Link>
                       ) : (
@@ -134,147 +138,39 @@ export default function Home() {
   );
 }
 
-// Calculate item width for a 2-column grid with spacing
-const { width } = Dimensions.get('window');
-const cardMargin = 5;
-const cardWidth = (width*0.9) - (cardMargin * 2);
-
 const styles = StyleSheet.create({
-  flexContainer: {
-    flex: 1,
-  },
-  container: {
-    padding: 24,
-    paddingTop: 60,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  mainTitle: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#4c2882',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#6b7280',
-  },
-  genreSection: {
-    marginBottom: 48,
-  },
-  genreHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  genreTitleBadge: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  genreTitleText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#d1d5db',
-    marginLeft: 16,
-  },
-  quizGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -cardMargin,
-  },
+  flexContainer: { flex: 1 },
+  container: { padding: 24, paddingTop: 60 },
+  header: { alignItems: 'center', marginBottom: 48 },
+  mainTitle: { fontSize: 36, fontWeight: 'bold', color: '#4c2882', marginBottom: 12 },
+  subtitle: { fontSize: 18, color: '#6b7280' },
+  genreSection: { marginBottom: 48 },
+  genreHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  genreTitleBadge: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999 },
+  genreTitleText: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+  divider: { flex: 1, height: 1, backgroundColor: '#d1d5db', marginLeft: 16 },
+  quizGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   cardContainer: {
-    width: cardWidth,
-    margin: cardMargin,
     backgroundColor: 'white',
     borderRadius: 16,
-    // Shadow for iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    // Shadow for Android
     elevation: 6,
   },
-  disabledCard: {
-    backgroundColor: '#f3f4f6',
-    opacity: 0.7,
-  },
-  cardTopBorder: {
-    height: 6,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  cardContent: {
-    padding: 20,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  cardIcon: {
-    fontSize: 36,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  difficultyText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#4b5563',
-    marginBottom: 24,
-    lineHeight: 20,
-    minHeight: 60,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-  },
-  playButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  disabledButton: {
-    backgroundColor: '#e5e7eb',
-  },
-  disabledButtonText: {
-    color: '#6b7280',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
+  disabledCard: { backgroundColor: '#f3f4f6', opacity: 0.7 },
+  cardTopBorder: { height: 6, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  cardContent: { padding: 20 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  cardIcon: { fontSize: 36 },
+  cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 },
+  cardDescription: { fontSize: 14, color: '#4b5563', marginBottom: 24, lineHeight: 20, minHeight: 60 },
+  buttonContainer: { alignItems: 'center' },
+  playButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  disabledButton: { backgroundColor: '#e5e7eb' },
+  disabledButtonText: { color: '#6b7280', fontWeight: 'bold', fontSize: 16 },
+  footer: { alignItems: 'center', marginTop: 20 },
+  footerText: { fontSize: 14, color: '#6b7280' },
 });

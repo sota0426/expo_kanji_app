@@ -1,6 +1,6 @@
 import { kankenToGakusei } from "@/assets/kankenToGrade";
 import { Animated, StyleSheet, Text, View } from "react-native";
-import { KanjiData } from "./QuizScreen";
+import { KanjiData } from "./styles";
 
 // 
 // --- readingKanji 関数 (変更なし) ---
@@ -8,11 +8,11 @@ import { KanjiData } from "./QuizScreen";
 export const readingKanji = (kanji: KanjiData) => {
   const kunyomiStr = (kanji.kunyomi && kanji.kunyomi.length > 0)
     ? kanji.kunyomi.join("、") // 区切り文字を "、" に変更
-    : ""; 
+    : "-"; 
 
   const onyomiStr = (kanji.onyomi && kanji.onyomi.length > 0)
     ? kanji.onyomi.join("、") // 区切り文字を "、" に変更
-    : ""; 
+    : "-"; 
 
   return {
     kunyomiStr,
@@ -21,12 +21,10 @@ export const readingKanji = (kanji: KanjiData) => {
 }
 
 interface ResultFlashProps {
-  currentRadicalKanji: KanjiData;
   collectKanji:KanjiData;
 }
 
 export default function ResultFlash({
-  currentRadicalKanji,
   collectKanji
 }: ResultFlashProps) {
   const { kunyomiStr, onyomiStr } = readingKanji(collectKanji);
@@ -42,12 +40,14 @@ export default function ResultFlash({
         aria-live="assertive"
       >
           <>
-            <Text style={[ styles.kanjiChar, styles.correctText]}>
-              {collectKanji.char}
+
+            <Text style={[ styles.kanjiGrade, styles.correctSubText]}>
+              {kankenToGakusei(collectKanji.kanken)}
             </Text>
 
-            {/* ▼▼▼ 修正箇所 ▼▼▼ */}
-            
+            <Text style={[ styles.kanjiChar, styles.correctText]}>
+              {collectKanji.char}
+            </Text>       
             {/* 訓読みが存在する場合のみ、専用の行で表示 */}
             {kunyomiStr && (
               // 1. ラッパーViewを追加
@@ -70,11 +70,14 @@ export default function ResultFlash({
                 </Text>
               </View>
             )}
-            {/* ▲▲▲ 修正完了 ▲▲▲ */}
 
-            <Text style={[ styles.kanjiGrade, styles.correctSubText]}>
-              {kankenToGakusei(collectKanji.kanken)}
-            </Text>
+              <View style={styles.readingWrapper}>
+                <Text style={[styles.readingLabel, styles.correctSubText]}>意味:</Text>
+                <Text style={[ styles.kanjiReading, styles.correctSubText]}>
+                  {collectKanji.meaning}
+                </Text>
+              </View>
+
           </>
       </Animated.View>
     </View>
@@ -163,8 +166,7 @@ const styles = StyleSheet.create({
   // ▲▲▲ 修正完了 ▲▲▲
 
   kanjiGrade: {
-    fontSize: 16,
+    fontSize: 20,
     color: "#6B7280", // gray-500
-    marginTop: 8, // 読み方リストとの間に少し余白を追加
   },
 });

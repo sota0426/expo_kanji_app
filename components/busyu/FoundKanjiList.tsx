@@ -8,52 +8,41 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { KanjiData, main_styles } from "./QuizScreen";
+import { KanjiData, main_styles } from "./styles";
+
+
+type GroupedKanji = Record<number, KanjiData[]>;
+
+  const kunyomiStr =(kanji: KanjiData) => kanji.kunyomi?.[0] || "";
+  const onyomiStr =(kanji: KanjiData) => kanji.onyomi?.[0] || "";
+
+
 
 interface FoundKanjiListProps {
   foundKanji: KanjiData[];
   allKanji?: KanjiData[]; 
+  isGamePlaying:boolean;
 }
 
-type GroupedKanji = Record<number, KanjiData[]>;
-
-const simpleReadingKanji = (kanji: KanjiData) => {
-  const kunyomiStr = (kanji.kunyomi && kanji.kunyomi.length > 0)
-    ? kanji.kunyomi[0]
-    : ""; 
-
-  const onyomiStr = (kanji.onyomi && kanji.onyomi.length > 0)
-    ? kanji.onyomi[0]
-    : ""; 
-
-  if(onyomiStr && kunyomiStr){
-    return `${kunyomiStr} , ${onyomiStr}`;
-  }
-  if(onyomiStr){
-    return onyomiStr;
-  }
-  if(kunyomiStr){
-    return kunyomiStr;
-  }
-  return "";
-}
-
-export const FoundKanjiList = React.memo(({
+export const FoundKanjiList = React.memo(function FoundKanjiList({
   foundKanji,
   allKanji, 
-}: FoundKanjiListProps) => {
+  isGamePlaying
+}: FoundKanjiListProps){
 
   const [selectedKanji, setSelectedKanji] = useState<KanjiData | null>(null);
-  const isResultMode = !!allKanji; 
-  const listToDisplay = allKanji || foundKanji;
 
-  const foundKanjiSet = useMemo(() => {
-    return new Set(foundKanji.map(k => k.char));
-  }, [foundKanji]);
+  const foundKanjiSet = useMemo(
+    ()=> new Set(foundKanji.map((k)=> k.char)),
+    [foundKanji]
+  );
 
   
   const groupedByKanken = useMemo(() => {
-    return listToDisplay.reduce((acc, kanji) => {
+    // allKanjiが存在しない場合に空の配列で早期リターン
+    if (!allKanji) return {};
+
+    return allKanji.reduce((acc, kanji) => {
       const kanken = kanji.kanken; 
       if (!acc[kanken]) {
         acc[kanken] = [];
@@ -61,54 +50,60 @@ export const FoundKanjiList = React.memo(({
       acc[kanken].push(kanji);
       return acc;
     }, {} as GroupedKanji);
-  }, [listToDisplay]); 
+  }, [allKanji]); 
 
   const sortedKankenLevels = useMemo(() => {
-    return Object.keys(groupedByKanken).sort((a, b) => Number(b) - Number(a)); 
+    return Object.keys(groupedByKanken)
+      .map(Number)  
+      .sort((a, b) => b - a); 
   }, [groupedByKanken]);
 
-  const kankenn =(kankenLevel:number)=>{
-    if( kankenLevel % 1 ===0){
-      return `${kankenLevel}級`;
-    }else{
-      const integerPart = Math.floor(kankenLevel);
-      return `準${integerPart}級`;
-    }
-  }
+  const kankenLabel = (level:number)=>
+    level % 1 === 0 ? `${level}級` : `準${Math.floor(level)}級`
+  
 
   return (
     <View style={styles.listContainer}>
+
       {sortedKankenLevels.map((kankenLevel) => (
         <View key={kankenLevel} style={styles.gradeGroupContainer}>
           
           <Text style={styles.gradeTitle}>
-            {kankenn(Number(kankenLevel))}
+            {kankenLabel(kankenLevel)}
             <Text style={styles.gradeSubTitle}>
               （{kankenToGakusei(Number(kankenLevel))}）
             </Text>
           </Text>
 
+          {/** ---各級の漢字一覧--- */}
           <View style={styles.kanjiRowContainer}>
-            {groupedByKanken[Number(kankenLevel)].map((k) => {
-              
-              const isFound = foundKanjiSet.has(k.char);
-              
+
+            {(groupedByKanken[Number(kankenLevel)] || []).map((kanji: KanjiData) => {
+              const isFound = foundKanjiSet.has(kanji.char);
               return (
                 <TouchableOpacity 
-                  key={k.char} 
-                  onPress={() => setSelectedKanji(k)} 
+                  key={kanji.char} 
+                  // ★ ゲームプレイ中はモーダルを開かないようにする
+                  onPress={() => !isGamePlaying && setSelectedKanji(kanji)}
+                  // ★ ゲームプレイ中は押せないことがわかるように、タップ時のフィードバックを無効化
+                  activeOpacity={isGamePlaying ? 1.0 : 0.2}
                   style={[
                     main_styles.radicalContainer, 
                     styles.kanjiItem,
-                    isResultMode && (isFound ? styles.foundItem : styles.notFoundItem)
+                    isFound ? styles.foundItem : styles.notFoundItem,
                   ]}
                 >
+                  {/* ★ isFoundか、!isGamePlayingの時だけ文字を表示 */}
                   <Text style={main_styles.radicalText}>
-                    {k.char}
+                    {isFound || !isGamePlaying ? kanji.char : '？'}
                   </Text>
                   <Text style={main_styles.countText}>
-                    {simpleReadingKanji(k)}
+                    {isFound || !isGamePlaying ? kunyomiStr(kanji) : ' '}
                   </Text>
+                  <Text style={main_styles.countText}>
+                    {isFound || !isGamePlaying ? onyomiStr(kanji) : ' '}
+                  </Text>
+
                 </TouchableOpacity>
               );
             })}
@@ -116,7 +111,7 @@ export const FoundKanjiList = React.memo(({
         </View>
       ))}
 
-      {/* --- ▼▼▼ モーダル修正箇所 ▼▼▼ --- */}
+      {/* --- モーダル (変更なし) --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -131,43 +126,9 @@ export const FoundKanjiList = React.memo(({
             {selectedKanji && ( 
               <>
                 <Text style={styles.modalKanji}>{selectedKanji.char}</Text>
-                
-                {/* --- 訓読み (SingleLine スタイルを使用) --- */}
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>訓読み</Text>
-                  <Text style={styles.modalInfoTextSingleLine}> {/* ★ 変更 */}
-                    {selectedKanji.kunyomi && selectedKanji.kunyomi.length > 0
-                      ? selectedKanji.kunyomi.join('、')
-                      : "N/A"}
-                  </Text>
-                </View>
-
-                {/* --- 音読み (SingleLine スタイルを使用) --- */}
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>音読み</Text>
-                  <Text style={styles.modalInfoTextSingleLine}> {/* ★ 変更 */}
-                    {selectedKanji.onyomi && selectedKanji.onyomi.length > 0
-                      ? selectedKanji.onyomi.join('、')
-                      : "N/A"}
-                  </Text>
-                </View>
-
-                {/* --- 意味 (MultiLine スタイルを使用) --- */}
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalInfoLabel}>意味</Text>
-                  <View style={styles.modalInfoTextWrapper}>
-                    {selectedKanji.meaning && selectedKanji.meaning.length > 0 ? (
-                      selectedKanji.meaning.map((meaning, index) => (
-                        <Text key={index} style={styles.modalInfoTextMultiLine}> 
-                          {meaning}
-                        </Text>
-                      ))
-                    ) : (
-                      <Text style={styles.modalInfoTextMultiLine}>N/A</Text> 
-                    )}
-                  </View>
-                </View>
-                {/* --- 修正完了 --- */}
+                <InfoRow label="訓読み" values={selectedKanji.kunyomi} />
+                <InfoRow label="音読み" values={selectedKanji.onyomi} />
+                <InfoRow label="意味" values={selectedKanji.meaning} multi={true} />
 
                 <TouchableOpacity 
                   style={styles.modalCloseButton} 
@@ -180,47 +141,74 @@ export const FoundKanjiList = React.memo(({
           </Pressable>
         </Pressable>
       </Modal>
-      {/* --- ▲▲▲ モーダル修正完了 ▲▲▲ --- */}
     </View>
-  );
+  )
 });
 
-// --- ▼▼▼ スタイル修正箇所 ▼▼▼ ---
+const InfoRow = ({
+  label,
+  values,
+  multi = false,
+}:{
+  label:string;
+  values?:string[];
+  multi?:boolean;
+})=>(
+   <View style={styles.modalInfoRow}>
+    <Text style={styles.modalInfoLabel}>{label}</Text>
+    <View style={styles.modalInfoTextWrapper}>
+      {values && values.length > 0 ? (
+        multi ? (
+          values.map((v, i) => (
+            <Text key={i} style={styles.modalInfoTextMultiLine}>
+              {v}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.modalInfoTextSingleLine}>{values.join("、")}</Text>
+        )
+      ) : (
+        <Text style={multi ? styles.modalInfoTextMultiLine : styles.modalInfoTextSingleLine}>
+          -
+        </Text>
+      )}
+    </View>
+  </View>
+); 
+
+
+// ----------------------------
+// スタイル (変更なし)
+// ----------------------------
 const styles = StyleSheet.create({
-  listContainer: {
-    paddingHorizontal: 8, 
-  },
-  gradeGroupContainer: {
-    marginVertical: 12, 
-  },
+  listContainer: { paddingHorizontal: 8, paddingBottom: 20 },
+  gradeGroupContainer: { marginVertical: 12 },
   gradeTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#374151", 
+    color: "#374151",
     marginBottom: 8,
     paddingLeft: 4,
   },
   gradeSubTitle: {
     fontSize: 14,
     fontWeight: "normal",
-    color: "#6B7280", 
-    marginLeft: 8, 
+    color: "#6B7280",
+    marginLeft: 8,
   },
   kanjiRowContainer: {
-    flexDirection: "row", 
-    flexWrap: "wrap",     
+    flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-start",
   },
-  kanjiItem: {
-    margin: 4, 
-  },
+  kanjiItem: { margin: 4 },
   foundItem: {
-    backgroundColor: "#DCFCE7", // green-100
-    borderColor: "#86EFAC", // green-300
+    backgroundColor: "#DCFCE7", // 正解→緑
+    borderColor: "#86EFAC",
   },
   notFoundItem: {
-    backgroundColor: "#FEE2E2", // red-100
-    borderColor: "#FDA4AF", // red-300
+    backgroundColor: "#FEE2E2", // 不正解→赤
+    borderColor: "#FCA5A5",
   },
   modalOverlay: {
     flex: 1,
@@ -235,16 +223,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
     elevation: 5,
   },
   modalKanji: {
     fontSize: 80,
     fontWeight: "bold",
-    color: "#1E40AF", 
+    color: "#1E40AF",
     marginBottom: 16,
   },
   modalInfoRow: {
@@ -252,34 +236,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB", // gray-200
+    borderBottomColor: "#E5E7EB",
     paddingBottom: 8,
   },
   modalInfoLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#4B5563", // gray-600
-    width: 60, 
+    color: "#4B5563",
+    width: 60,
   },
-  modalInfoTextWrapper: {
-    flex: 1, 
-  },
-  // ★ スタイルを2つに分割
-  modalInfoTextSingleLine: { // 訓読み・音読み用 (折り返しのため flex: 1 が必要)
+  modalInfoTextWrapper: { flex: 1 },
+  modalInfoTextSingleLine: {
     fontSize: 16,
-    color: "#1F2937", // gray-800
-    marginBottom: 4, 
-    flex: 1, 
+    color: "#1F2937",
+    marginBottom: 4,
+    flex: 1,
   },
-  modalInfoTextMultiLine: { // 意味用 (flex: 1 は不要)
+  modalInfoTextMultiLine: {
     fontSize: 16,
-    color: "#1F2937", // gray-800
-    marginBottom: 4, 
+    color: "#1F2937",
+    marginBottom: 4,
   },
-  // ---
   modalCloseButton: {
     marginTop: 16,
-    backgroundColor: "#6B7280", // gray-500
+    backgroundColor: "#6B7280",
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -290,4 +270,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-// --- ▲▲▲ スタイル修正完了 ▲▲▲ ---
