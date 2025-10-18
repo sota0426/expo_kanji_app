@@ -176,6 +176,8 @@ export default function QuizScreen({
     }
   }, [showResultFlash, isGamePlaying]); // isGamePlayingも依存配列に追加
 
+  const gameClear = foundKanji.length === currentRadicalKanji.kanji.length;
+
   // ------------------------------------
   // メインレンダリング
   // ------------------------------------
@@ -184,7 +186,8 @@ export default function QuizScreen({
     <ScrollableContainer>
       {/* 1.クイズ終了後のアニメーション */}
       {!isGamePlaying &&  (
-        <ConfettiAnimation  
+        <ConfettiAnimation
+          currentAllKanjiLength={currentAllKanji.length}  
           score={score}
           pointerEvents="none"
         />
@@ -231,7 +234,7 @@ export default function QuizScreen({
       </View>
       
       {/* 4. メインコンテンツの切り替え */}
-      { isGamePlaying ? (
+      { isGamePlaying && (
         <View style={{marginTop:20}}>
           <QuizInputSection
             inputRef={inputRef}
@@ -245,13 +248,12 @@ export default function QuizScreen({
             isShowCard={isCardShow}
           />
         </View>
-      ) : (
-        /* 結果表示UI */
+      )}
+
+      {( !isGamePlaying || gameClear )&&(
           <GameEndScreen 
-            score={score}
             currentRadicalKanji={currentRadicalKanji}
             foundKanji={foundKanji}
-            isGameClear={foundKanji.length === currentRadicalKanji.kanji.length}
           />
       )}
 

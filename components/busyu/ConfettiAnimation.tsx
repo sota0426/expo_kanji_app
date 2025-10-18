@@ -7,11 +7,13 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Confetti from 'react-native-confetti';
 
 interface ConfettiAnimationProps {
+    currentAllKanjiLength:number;
     score: number;
     pointerEvents?: 'box-none' | 'box-only' | 'none' | 'auto';
 }
 
 export default function ConfettiAnimation({
+    currentAllKanjiLength,
     score,
     pointerEvents 
 }: ConfettiAnimationProps) {
@@ -23,7 +25,7 @@ export default function ConfettiAnimation({
     useEffect(() => {
         const confetti = confettiRef.current;
 
-        if (score >= 5 && confettiRef.current) {
+        if ((score >= 5 || score === currentAllKanjiLength) && confettiRef.current) {
             confettiRef.current.startConfetti();
         }
 

@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View
 } from 'react-native';
 
@@ -13,52 +12,39 @@ import { KanjiData } from './styles';
 
 
 interface GameEndScreenProps {
-  score: number;
   currentRadicalKanji: ProcessedDataProps;
   foundKanji: KanjiData[] | null;
-  isGameClear: boolean;
-  // onReplay: () => void; // (現在は未使用)
 }
 
 export default function GameEndScreen({
-  score = 0,
   currentRadicalKanji,
   foundKanji,
-  isGameClear,
 }: GameEndScreenProps) {
   
-  const { width, height } = useWindowDimensions();
-
-  // 🚀 isAnimationのロジックを復元 (スコアが15点以上またはゲームクリア)
-  const isAnimation = useMemo(() => isGameClear || score >= 15, [isGameClear, score]);
-  // const isAnimation = true; // デバッグ用コードは削除またはコメントアウト推奨
-
   const onReturn=()=>{
      router.push("/busyu");
   }
 
   const foundKanjiCount = foundKanji ? foundKanji.length : 0;
   const allKanjiCount = currentRadicalKanji.kanji.length;
+  const collectPercentage = foundKanjiCount / allKanjiCount  * 100
 
   const message = useMemo(() => {
-    if(score === 0) return "次はがんばろう！";
-    if (score >= 20) return "漢字マスター！";
-    if (score >= 15) return "素晴らしい！";
-    if (score >= 10) return "よくできました！";
-    if (score >= 5) return "がんばりました！";
-    return "また挑戦してね！";
-  }, [score]);
+    if (collectPercentage >= 80) return "漢字マスター！";
+    if (collectPercentage >= 60) return "素晴らしい！";
+    if (collectPercentage >= 40) return "よくできました！";
+    if (collectPercentage >= 20) return "がんばりました！";
+    return "次は頑張ろう！";
+  }, [collectPercentage]);
 
 
   return (
     <View style={styles.container}>
       {/* メッセージ */}
-      <Text style={styles.title}>（全{allKanjiCount} 個）</Text>
+      <Text style={[styles.messageText]}>（全{allKanjiCount} 個）</Text>
       <Text style={styles.scoreText}>正解 {foundKanjiCount} 個</Text>
       <Text style={styles.messageText}>{message}</Text>
             
-      {/* <AllKanjiList /> はここに追加 */}
-
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           onPress={onReturn}
@@ -87,13 +73,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8, // Android用
   }, 
-  // text-3xl font-bold mb-4
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  
+
   // text-6xl font-bold text-blue-600 mb-4
   scoreText: {
     fontSize: 60,
@@ -105,7 +85,7 @@ const styles = StyleSheet.create({
   // text-2xl text-gray-700 mb-2
   messageText: {
     fontSize: 24,
-    color: '#374151', // gray-700
+    color: '#455d83ff', // gray-700
     marginBottom: 8,
   },
   
@@ -150,7 +130,7 @@ const styles = StyleSheet.create({
   
   // bg-gray-500 hover:bg-gray-600
   secondaryButton: {
-    backgroundColor: '#6B7280', // gray-500
+    backgroundColor: '#51c58fff', // gray-500
   },
   
   // text-white font-bold text-xl
