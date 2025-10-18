@@ -21,10 +21,12 @@ export const readingKanji = (kanji: KanjiData) => {
 }
 
 interface ResultFlashProps {
+  currentRadicalKanji: KanjiData;
   collectKanji:KanjiData;
 }
 
 export default function ResultFlash({
+  currentRadicalKanji,
   collectKanji
 }: ResultFlashProps) {
   const { kunyomiStr, onyomiStr } = readingKanji(collectKanji);

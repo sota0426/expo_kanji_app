@@ -9,13 +9,13 @@ import {
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { prpcessedKanji } from './QuizScreen';
+import { KanjiData } from './QuizScreen';
 
 
 interface GameEndScreenProps {
   score: number;
   currentRadicalKanji: ProcessedDataProps;
-  foundKanji: prpcessedKanji[] | null;
+  foundKanji: KanjiData[] | null;
   isGameClear: boolean;
   // onReplay: () => void; // (現在は未使用)
 }
