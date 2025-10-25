@@ -35,7 +35,7 @@ export default function ConfettiAnimation({
                 confetti.stopConfetti();
             }
         };
-    }, [score]);
+    }, [score,currentAllKanjiLength]);
 
     // アニメーションを画面全体に表示するためのWrapper
     return (

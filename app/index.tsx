@@ -15,19 +15,10 @@ export default function Home() {
       icon: "📝"
     },
     {
-      title: "部首当てクイズ",
-      description: "漢字の部首を答える４択クイズ",
-      path: "/busyuate", 
-      disabled: true,
-      genre: "漢字",
-      difficulty: "中級",
-      icon: "🔍"
-    },
-    {
       title: "四字熟語当てクイズ",
       description: "意味から四字熟語を答える４択クイズ",
-      path: "/yojiimi", 
-      disabled: true,
+      path: "/yojijukugo", 
+      disabled: false,
       genre: "漢字",
       difficulty: "上級",
       icon: "📚"
