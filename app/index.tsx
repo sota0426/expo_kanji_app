@@ -54,15 +54,19 @@ export default function Home() {
   const [cardWidth, setCardWidth] = useState(160);
 
   useEffect(() => {
-    const updateLayout = () => {
-      const { width } = Dimensions.get('window');
-      let columns = 2;
-      if (width >= 1200) columns = 4;
-      else if (width >= 900) columns = 3;
-      else if (width <= 400) columns = 1;
-      setNumColumns(columns);
-      setCardWidth((width - 48 - (columns * 10)) / columns);
-    };
+    const gutter = 10;
+    const horizontalPadding = 24;
+    const updateLayout =()=>{
+      const {width} = Dimensions.get("window");
+      let colums =2;
+      if(width >=1000) colums = 4;
+      else if(width >= 600) colums=3;
+      else if(width <= 400) colums=1;
+      setNumColumns(colums);
+      const totalGutter = gutter * (colums -1);
+      setCardWidth((width - horizontalPadding - totalGutter) / colums);
+    }
+
     updateLayout();
     const subscription: any = Dimensions.addEventListener('change', updateLayout);
     return () => {
@@ -94,11 +98,13 @@ export default function Home() {
             
             <View style={[styles.quizGrid, { justifyContent: numColumns === 1 ? 'center' : 'flex-start' }]}>
               {genreQuizzes.map((quiz, index) => (
-                <View key={index} style={[
-                  styles.cardContainer,
-                  quiz.disabled && styles.disabledCard,
-                  { width: cardWidth, margin: 5 }
-                ]}>
+                <View key={index} 
+                      style={[
+                        styles.cardContainer,
+                        quiz.disabled && styles.disabledCard,
+                        { width: cardWidth, marginRight: 20, marginBottom: 20 }
+                      ]}
+                >
                   <LinearGradient colors={getGenreColors(quiz.genre)} style={styles.cardTopBorder} />
                   <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>

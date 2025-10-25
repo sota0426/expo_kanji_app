@@ -132,12 +132,13 @@ export default function QuizScreen({
     setInputText("");
 
     if(!wasCorrect && isGamePlaying){
-      requestAnimationFrame(()=>{
+      setTimeout(()=>{
         inputRef.current?.focus();
-      });
-    }
+        },100);
+    };
 
-  }, [inputText, findMatchedKAnji, isGamePlaying, inputRef]); // ▼ 依存配列を修正
+  }, [inputText, findMatchedKAnji, isGamePlaying, inputRef]); 
+
 
   const onPlayingChange = useCallback(() => {
     setIsPlaying(prev => !prev);
