@@ -1,6 +1,6 @@
 import { yojiData } from "@/assets/yojiData";
 import { LinearGradient } from "expo-linear-gradient"; // グラデーションに必要
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -40,7 +40,7 @@ const getRandomChoices = (correct: yojiDataProps, allData: yojiDataProps[]) => {
   const shuffled = allData
     .filter((item) => item.radical !== correct.radical)
     .sort(() => 0.5 - Math.random())
-    .slice(0, 5);
+    .slice(0, 4);
   return [...shuffled, correct].sort(() => 0.5 - Math.random());
 };
 
@@ -64,6 +64,8 @@ export const YojiQuiz = ({
     }[]
   >([]);
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
   // 初回レンダリング時にquizSetを作成
   useEffect(() => {
     const newQuizSet = getRandomQuizSet(level);
@@ -84,6 +86,10 @@ export const YojiQuiz = ({
     setShowCelebration(false);
   }, [current]);
 
+  useEffect(()=>{
+    scrollViewRef.current?.scrollTo({y:0, animated:false});
+  },[currentIndex])
+
   const handleChoice = (radical: string) => {
     if (selected) return;
     setSelected(radical);
@@ -93,7 +99,7 @@ export const YojiQuiz = ({
       setScore((prev) => prev + 1);
       setShowCelebration(true);
       // 正解時の効果音やアニメーション用のタイマー
-      setTimeout(() => setShowCelebration(false), 1500);
+      setTimeout(() => setShowCelebration(false), 1000);
     }
   };
 
@@ -151,7 +157,7 @@ export const YojiQuiz = ({
       </Modal>
 
       {/* --- メインコンテンツ --- */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContainer}>
         {/* ヘッダー */}
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
@@ -403,7 +409,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   celebrationText: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "bold",
     color: "white",
   },

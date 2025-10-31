@@ -105,7 +105,7 @@ export default function QuizScreen({
   const hintList = useMemo(()=>
     unfoundKanji
       .sort((a, b) =>b.kanken -  a.kanken)
-      .slice(0,10)
+      .slice(0,5)
       .map((k) => `${k.meaning[0]} （${kankenToGakusei(k.kanken)} ）`)
   ,[unfoundKanji]);
 
@@ -116,41 +116,42 @@ export default function QuizScreen({
   );
   
   const checkAnswer= useCallback(() => {
-    if(!inputText.trim()) return;
+    if(!inputText.trim()){
+      inputRef.current?.focus();
+      return;
+    }
     
     const answer = inputText.trim().toLocaleLowerCase();
     const matchedKanji = findMatchedKAnji(answer); // matchedKanji は KanjiData | undefined 型
-
-    let wasCorrect = false;
     
     if(matchedKanji){
       setScore(current => current + 1);
       setFoundKanji(prev => [...prev , matchedKanji]);
       setCollectedKanji(matchedKanji);
-      wasCorrect = true;
     }
     setInputText("");
+    setTimeout(()=>inputRef.current?.focus(),150);   
 
-    if(!wasCorrect && isGamePlaying){
-      setTimeout(()=>{
-        inputRef.current?.focus();
-        },100);
-    };
-
-  }, [inputText, findMatchedKAnji, isGamePlaying, inputRef]); 
+  }, [inputText, findMatchedKAnji, inputRef]); 
 
 
   const onPlayingChange = useCallback(() => {
     setIsPlaying(prev => !prev);
-  }, []); // 依存配列を空に
+    if(!isGamePlaying){
+      setTimeout(()=>inputRef.current?.focus(),150);
+    }
+    setIsCardShow(false);
+  }, [isGamePlaying,inputRef]);
 
   const toggleHint = useCallback(() => {
     setIsHintVisible(prev => !prev);
-  }, []); // 依存配列を空に
+    setTimeout(()=>inputRef.current?.focus(),150);   
+  }, [inputRef]); // 依存配列を空に
 
     const toggleCard = useCallback(() => {
     setIsCardShow(prev => !prev);
-  }, []); // 依存配列を空に
+    setTimeout(()=>inputRef.current?.focus(),150);   
+  }, [inputRef]); // 依存配列を空に
 
 
   // --- 副作用 (useEffect) ---
@@ -161,21 +162,27 @@ export default function QuizScreen({
       timer = setTimeout(() => {
         setShowResultFlash(false);
         setCollectedKanji(null);
+
+        if(isGamePlaying){
+          setTimeout(()=>inputRef.current?.focus(),100)
+        }
       }, 2000);
     }
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [collectedKanji]);
+  }, [collectedKanji,isGamePlaying,inputRef]);
+
 
   useEffect(() => {
-    // ResultFlashが非表示になった後、かつゲームプレイ中にフォーカスを戻す
-    if (!showResultFlash && isGamePlaying) { 
-      requestAnimationFrame(()=>{
+    const autoFocusTimer = setTimeout(()=>{
+      if(isGamePlaying){
         inputRef.current?.focus();
-      })
-    }
-  }, [showResultFlash, isGamePlaying]); // isGamePlayingも依存配列に追加
+      }
+    },300);
+
+    return ()=>clearTimeout(autoFocusTimer);
+  }, [isGamePlaying, inputRef]); // isGamePlayingも依存配列に追加
 
   const gameClear = foundKanji.length === currentRadicalKanji.kanji.length;
 

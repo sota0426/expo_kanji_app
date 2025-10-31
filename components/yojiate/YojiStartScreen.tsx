@@ -162,12 +162,6 @@ const YojiStartScreen = ({
     backgroundColor: isBackButtonHovered ? "#D1D5DB" : "#E5E7EB",
   };
 
-  const headerIconStyle: CSSProperties = {
-    ...styles.headerIconContainer,
-    ...styles.shadow,
-    background: 'linear-gradient(to right, #4F46E5, #7C3AED)',
-  };
-
   const containerStyle: CSSProperties = {
     ...styles.container,
     background: 'linear-gradient(to bottom right, #F3E8FF, #EFF6FF, #E0F2FE)',

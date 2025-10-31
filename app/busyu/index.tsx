@@ -1,9 +1,8 @@
 import { busyuData } from "@/assets/busyuData";
 import QuizScreen from "@/components/busyu/QuizScreen";
 import RadicalList from "@/components/busyu/RadicalList";
-import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Button, SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaView, StyleSheet } from "react-native";
 
 // --- ヘルパー関数 (変更なし) ---
 const kanaToHiragana = (str: string) =>
@@ -85,21 +84,12 @@ export default function QuizStarter() {
     setCurrentRadical(radical);
   };
 
-  // ★★ 追加: クイズ画面からリストに戻る処理 ★★1
-  const handleBack = () => {
-    router.back();
-  };
 
   return (
     <SafeAreaView style={styles.container}>
              
       {!currentRadicalData ? (
         <>
-        <Button
-          color="gray"
-          title="ホームに戻る"
-          onPress={handleBack}
-        />
         
           <RadicalList 
             radicals={radicalWithCount} 

@@ -11,19 +11,24 @@ export default function Home() {
       path: "/busyu",
       disabled: false,
       genre: "漢字",
-      difficulty: "初級",
       icon: "📝"
     },
     {
       title: "四字熟語当てクイズ",
       description: "意味から四字熟語を答える４択クイズ",
-      path: "/yojijukugo", 
+      path: "/yojiate", 
       disabled: false,
       genre: "漢字",
-      difficulty: "上級",
       icon: "📚"
     },      
-  ];
+    {
+      title: "四字熟語穴埋めクイズ",
+      description: "四字熟語の一文字を当てるクイズ",
+      path: "/yojiana", 
+      disabled: false,
+      genre: "漢字",
+      icon: "🕳️"
+    },    ];
 
   const groupedQuizzes = quizzes.reduce<Record<string, typeof quizzes>>((acc, quiz) => {
     if (!acc[quiz.genre]) acc[quiz.genre] = [];

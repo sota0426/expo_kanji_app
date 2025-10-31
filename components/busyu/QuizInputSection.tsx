@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View,InteractionManager } from "react-native";
 
 interface QuizInputSectionProps {
   inputRef: React.RefObject<TextInput | null>;

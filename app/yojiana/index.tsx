@@ -1,9 +1,9 @@
-import { FinishScreen } from "@/components/yojijukugo/FinishScreen";
-import YojiQuiz from "@/components/yojijukugo/QuizScreen";
-import YojiStartScreen from "@/components/yojijukugo/StartScreen";
+import YojiMissingCharQuiz from "@/components/yojiana/QuizScreen";
+import { FinishScreen } from "@/components/yojiate/FinishScreen";
+import YojiStartScreen from "@/components/yojiate/YojiStartScreen";
 import { useState } from "react";
 
-export default function Yojijukugo(){
+export default function Yojiana(){
   const [level , setLevel]=useState<number | null>(null);
   const [finished,setFinished] =useState<boolean>(false);
   const [score , setScore] = useState<number>(0);
@@ -42,7 +42,7 @@ export default function Yojijukugo(){
     )}
 
     return(
-      <YojiQuiz
+      <YojiMissingCharQuiz
         level={level}
         onFinish={(finalScore)=>handleFinish(finalScore)}
         onQuit={handleReturnTop}

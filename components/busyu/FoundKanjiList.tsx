@@ -185,7 +185,12 @@ const InfoRow = ({
 // スタイル (変更なし)
 // ----------------------------
 const styles = StyleSheet.create({
-  listContainer: { paddingHorizontal: 8, paddingBottom: 20 },
+  listContainer: { 
+    paddingHorizontal: 8, 
+    paddingBottom: 20 ,
+    backgroundColor:"#ffffffff",
+    
+  },
   gradeGroupContainer: { marginVertical: 12 },
   gradeTitle: {
     fontSize: 18,
